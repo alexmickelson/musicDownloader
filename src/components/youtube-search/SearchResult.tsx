@@ -13,12 +13,19 @@ interface Video {
 }
 
 function formatViews(views: number | string): string {
-  if (typeof views === 'string') return views
+  let numViews: number
+  if (typeof views === 'string') {
+    // Parse the number before the space (e.g., "1234567" from "1234567 views")
+    numViews = parseInt(views.split(' ')[0].replace(/,/g, ''), 10)
+    if (isNaN(numViews)) return views // fallback if parsing fails
+  } else {
+    numViews = views
+  }
   
-  if (views >= 1_000_000_000) return `${(views / 1_000_000_000).toFixed(1)}B`
-  if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`
-  if (views >= 1_000) return `${(views / 1_000).toFixed(1)}K`
-  return views.toString()
+  if (numViews >= 1_000_000_000) return `${(numViews / 1_000_000_000).toFixed(1)}B`
+  if (numViews >= 1_000_000) return `${(numViews / 1_000_000).toFixed(1)}M`
+  if (numViews >= 1_000) return `${(numViews / 1_000).toFixed(1)}K`
+  return numViews.toString()
 }
 
 export function SearchResult({
