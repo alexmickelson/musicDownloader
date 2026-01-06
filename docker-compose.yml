@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    ports:
+      - 8888:3000
+    restart: unless-stopped
+    volumes:
+      - /data/musicdownloader/downloads:/app/downloads
+      - /data/media/music/tagged:/app/output

@@ -1,51 +1,34 @@
-import { QueryClient } from '@tanstack/react-query'
-import superjson from 'superjson'
-import { createTRPCClient, httpBatchStreamLink } from '@trpc/client'
-
-import type { TRPCRouter } from '@/integrations/trpc/router'
-
-import { TRPCProvider } from '@/integrations/trpc/react'
-
-function getUrl() {
-  const base = (() => {
-    if (typeof window !== 'undefined') return ''
-    return `http://localhost:${process.env.PORT ?? 3000}`
-  })()
-  return `${base}/api/trpc`
-}
-
-export const trpcClient = createTRPCClient<TRPCRouter>({
-  links: [
-    httpBatchStreamLink({
-      transformer: superjson,
-      url: getUrl(),
-    }),
-  ],
-})
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { useState } from 'react'
 
 export function getContext() {
   const queryClient = new QueryClient({
     defaultOptions: {
-      dehydrate: { serializeData: superjson.serialize },
-      hydrate: { deserializeData: superjson.deserialize },
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        refetchOnWindowFocus: false,
+      },
     },
   })
 
-  return {
-    queryClient,
-  }
+  return { queryClient }
 }
 
-export function Provider({
-  children,
-  queryClient,
-}: {
-  children: React.ReactNode
-  queryClient: QueryClient
-}) {
+export function RootProvider({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        refetchOnWindowFocus: false,
+      },
+    },
+  }))
+
   return (
-    <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+    <QueryClientProvider client={queryClient}>
       {children}
-    </TRPCProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   )
 }

@@ -1,49 +1,37 @@
-# Build stage
 FROM node:24-alpine AS builder
 
-# Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy package files
 COPY package.json pnpm-lock.yaml ./
-
-# Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
 COPY . .
 
-# Build the application
 RUN pnpm run build
 
-# Production stage
 FROM node:24-alpine
 
-# Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Install yt-dlp and ffmpeg
+RUN apk add --no-cache python3 py3-pip ffmpeg && \
+    pip3 install --break-system-packages yt-dlp && \
+    mkdir -p /root/.config/yt-dlp && \
+    echo "--js-runtimes node" > /root/.config/yt-dlp/config
 
 WORKDIR /app
 
-# Copy package files
 COPY package.json pnpm-lock.yaml ./
-
-# Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
-
-# Copy built application from builder
 COPY --from=builder /app/.output ./.output
-COPY --from=builder /app/dist ./dist
+RUN mkdir -p /app/downloads && \
+    mkdir -p /app/output && \
+    chown -R 1000:1000 /app
 
-# Create storage directory
-RUN mkdir -p /app/storage
+USER 1000
 
-# Expose port
-EXPOSE 3000
-
-# Set environment to production
 ENV NODE_ENV=production
 
-# Start the application
 CMD ["node", ".output/server/index.mjs"]
