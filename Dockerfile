@@ -15,7 +15,6 @@ FROM node:24-alpine
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Install yt-dlp and ffmpeg
 RUN apk add --no-cache python3 py3-pip ffmpeg && \
     pip3 install --break-system-packages yt-dlp && \
     mkdir -p /root/.config/yt-dlp && \
@@ -23,12 +22,12 @@ RUN apk add --no-cache python3 py3-pip ffmpeg && \
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod
-COPY --from=builder /app/.output ./.output
-RUN mkdir -p /app/downloads && \
-    mkdir -p /app/output && \
+RUN mkdir -p /app/downloads /app/output && \
     chown -R 1000:1000 /app
+
+COPY --chown=1000:1000 package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod
+COPY --chown=1000:1000 --from=builder /app/.output ./.output
 
 USER 1000
 
