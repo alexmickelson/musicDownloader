@@ -53,13 +53,28 @@ export const downloadYouTube = createServerFn({ method: 'POST' })
     const command = `yt-dlp -x --audio-format mp3 --audio-quality 0 -o "${outputTemplate}" "${data.url}"`
 
     console.log('Executing yt-dlp command...')
-    const { stdout, stderr } = await execAsync(command)
+    
+    try {
+      const { stdout, stderr } = await execAsync(command)
 
-    if (stderr && !stderr.includes('Deleting original file')) {
-      console.error('yt-dlp stderr:', stderr)
+      if (stderr && !stderr.includes('Deleting original file')) {
+        console.error('yt-dlp stderr:', stderr)
+      }
+
+      console.log('yt-dlp stdout:', stdout)
+    } catch (error) {
+      // If download fails, list available formats for debugging
+      console.log('\n=== Download failed, listing available formats ===')
+      const listFormatsCommand = `yt-dlp --list-formats "${data.url}"`
+      try {
+        const { stdout: formatsOutput } = await execAsync(listFormatsCommand)
+        console.log(formatsOutput)
+      } catch (formatError) {
+        console.error('Error listing formats:', formatError)
+      }
+      console.log('=== End of formats list ===\n')
+      throw error
     }
-
-    console.log('yt-dlp stdout:', stdout)
 
     const outputPath = path.join(DOWNLOADS_DIR, `${sanitizedTitle}.mp3`)
 
